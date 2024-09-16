@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image gallery</title>
+<link rel="stylesheet" href="styles/style.css"> <!-- 链接样式表 -->
+</head>
+<body>
+
+<h1>Image gallery</h1>
+
+<!-- 图片展示区域 -->
+<div class="full-img">
+  <img class="displayed-img" src="images/P1.png" alt="图片 1">
+  <div class="overlay"></div> <!-- 覆盖层，用于变暗效果 -->
+  <button class="dark">变暗</button> <!-- 变暗按钮 -->
+</div>
+
+<!-- 缩略图区域 -->
+<div class="thumb-bar">
+  <!-- 缩略图，点击切换大图 -->
+  <img src="images/P1.png" alt="缩略图 1" onclick="changeImage('images/P1.png')">
+  <img src="images/P2.png" alt="缩略图 2" onclick="changeImage('images/P2.png')">
+  <img src="images/P3.png" alt="缩略图 3" onclick="changeImage('images/P3.png')">
+  <img src="images/P4.png" alt="缩略图 4" onclick="changeImage('images/P4.png')">
+  <img src="images/P5.png" alt="缩略图 5" onclick="changeImage('images/P5.png')">
+</div>
+
+<script src="scripts/main.js"></script> <!-- 链接脚本文件 -->
+</body>
+</html>

@@ -1,0 +1,61 @@
+/* 设置基本字体和页面宽度 */
+body {
+    font-family: Arial, sans-serif;
+  }
+  
+  /* 图片展示区域样式 */
+  .full-img {
+    position: relative; /* 相对定位，用于覆盖层定位 */
+    width: 30%;
+    margin: 20px auto; /* 居中显示 */
+  }
+  
+  .displayed-img {
+    width: 100%;
+    display: block; /* 防止图片下方出现空隙 */
+  }
+  
+  /* 覆盖层样式，默认不显示 */
+  .overlay {
+    position: absolute; /* 绝对定位，相对于.full-img */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    opacity: 0; /* 初始不透明度为0 */
+    transition: opacity 0.5s; /* 变化过程持续0.5秒 */
+  }
+  
+  /* 变暗按钮样式 */
+  .dark {
+    position: absolute; /* 绝对定位，相对于.full-img */
+    top: 10px;
+    left: 10px;
+    z-index: 10; /* 确保按钮在覆盖层之上 */
+  }
+  
+  /* 缩略图区域样式 */
+  .thumb-bar {
+    display: flex; /* 弹性布局，使缩略图水平排列 */
+    justify-content: center; /* 居中对齐 */
+    margin-bottom: 20px;
+  }
+  
+  /* 缩略图样式 */
+  .thumb-bar img {
+    width: 10%;
+    margin: 5px;
+    cursor: pointer; /* 鼠标悬停时显示指针 */
+    opacity: 0.6; /* 非选中状态下的透明度 */
+  }
+  
+  /* 鼠标悬停时缩略图样式 */
+  .thumb-bar img:hover {
+    opacity: 1; /* 鼠标悬停时透明度变为1 */
+  }
+  
+  h1 {
+    text-align: center; /* 将标题设置为居中对齐 */
+    margin-bottom: 20px; /* 在标题下方添加一些间距 */
+  }
