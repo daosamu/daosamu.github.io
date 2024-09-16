@@ -13,10 +13,10 @@ function changeImage(imageSource) {
     // 判断当前覆盖层的不透明度
     if (overlay.style.opacity === '0') {
       overlay.style.opacity = '0.5'; // 设置覆盖层不透明度为0.5，实现变暗效果
-      this.textContent = '变亮'; // 更改按钮文本为"变亮"
+      this.textContent = 'lighten'; // 更改按钮文本为"变亮"
     } else {
       overlay.style.opacity = '0'; // 清除覆盖层的不透明度，实现变亮效果
-      this.textContent = '变暗'; // 更改按钮文本为"变暗"
+      this.textContent = 'darken'; // 更改按钮文本为"变暗"
     }
   });
   
