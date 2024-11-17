@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+    <meta charset="UTF-8">
+    <title>MDN Breakout</title>
+    <!-- 内联样式，移除所有元素的默认内边距和外边距 -->
+    <style>
+        * {
+            padding:
+                0;
+            margin:
+                0;
+        }
+    </style>
+    <script src="phaser.min.js"></script>
+</head>
+
+<body>
+    <script>
+        // 创建一个新的Phaser游戏实例，参数分别为游戏宽高、渲染类型、游戏ID、配置对象
+        const game = new Phaser.Game(480, 320, Phaser.CANVAS, null, {
+            // 预加载阶段，用于加载游戏资源
+            preload,
+            // 创建阶段，用于初始化游戏环境
+            create,
+            // 更新阶段，用于游戏逻辑的每一帧更新
+            update,
+        });
+
+        let ball;
+        let paddle;
+        let bricks;
+        let newBrick;
+        let brickInfo;
+        let scoreText;
+        let score = 0;
+        let lives = 3;
+        let livesText;
+        let lifeLostText;
+        let playing = false;
+        let startButton;
+
+
+        function preload() {
+            // 设置游戏缩放模式为SHOW_ALL，使游戏适应整个屏幕
+            game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+
+            // 设置水平页面对齐方式为true，使游戏内容在水平方向上居中
+            game.scale.pageAlignHorizontally = true;
+
+            // 设置垂直页面对齐方式为true，使游戏内容在垂直方向上居中
+            game.scale.pageAlignVertically = true;
+
+            // 设置游戏舞台的背景颜色为浅灰色（#eee）
+            game.stage.backgroundColor = '#eee';
+
+            //加载小球图片
+            game.load.image('ball', 'ball.png');
+
+            // 加载球拍图片
+            game.load.image('paddle', 'paddle.png');
+
+            // 加载砖块图片
+            game.load.image('brick', 'brick.png');
+
+            // 加载砖块信息
+            game.load.spritesheet("ball", "wobble.png", 20, 20);
+
+            // 加载按钮图片
+            game.load.spritesheet("button", "button.png", 120, 40);
+
+        }
+        function create() {
+            // 启用物理系统
+            game.physics.startSystem(Phaser.Physics.ARCADE);
+
+            // 在游戏舞台上创建一个名为'ball'的精灵对象，位置为屏幕中央下方25像素处，使用的图像资源也是'ball'
+            ball = game.add.sprite(game.world.width * 0.5, game.world.height - 25, 'ball');
+
+            // 为球添加一个名为"wobble"的动画
+            // 动画帧序列为[0, 1, 0, 2, 0, 1, 0, 2, 0]，即球会依次显示第0帧、第1帧、第0帧、第2帧、第0帧、第1帧、第0帧、第2帧、第0帧
+            // 动画每秒播放24帧
+            ball.animations.add("wobble", [0, 1, 0, 2, 0, 1, 0, 2, 0], 24);
+
+            // 设置'ball'精灵对象的锚点为(0.5)，即精灵的左边缘和垂直中心点与精灵的位置坐标对齐
+            ball.anchor.set(0.5);
+
+            // 启用物理系统对ball的碰撞检测
+            game.physics.enable(ball, Phaser.Physics.ARCADE);
+
+            // 设置ball的碰撞检测边界为游戏世界的边界
+            ball.body.collideWorldBounds = true;
+
+            // 设置ball的碰撞反弹系数为1，使小球在碰撞时反弹
+            ball.body.bounce.set(1);
+
+            // 设置游戏世界的下边界碰撞检测为false，使小球在碰到游戏世界的边界时不会反弹
+            game.physics.arcade.checkCollision.down = false;
+
+            // 启用ball的边界检查，当ball离开游戏世界时触发事件
+            ball.checkWorldBounds = true;
+
+            // 当ball离开游戏世界时，触发一个事件，显示"Game Over!"的警告框，并重新加载页面
+            ball.events.onOutOfBounds.add(ballLeaveScreen, this);
+
+            // 在游戏舞台上创建一个名为'paddle'的精灵对象，位置为屏幕中央下方5像素处，使用的图像资源是'paddle'
+            paddle = game.add.sprite(
+                game.world.width * 0.5,  // 水平位置为屏幕宽度的一半
+                game.world.height - 5,    // 垂直位置为屏幕高度减去5像素
+                'paddle'                  // 使用的图像资源
+            );
+
+            // 设置锚点为精灵的中心底部，使精灵在水平方向上居中
+            paddle.anchor.set(0.5, 1);
+
+            // 启用物理系统对paddle的碰撞检测
+            game.physics.enable(paddle, Phaser.Physics.ARCADE);
+
+            // 设置paddle为不可移动的，即它不会受到物理引擎的影响
+            paddle.body.immovable = true;
+
+            initBricks();
+
+            // 定义文本样式
+            textStyle = { font: '18px Arial', fill: '#0095DD' };
+
+            // 创建显示分数的文本，初始分数为0
+            scoreText = game.add.text(5, 5, 'Points: 0', textStyle);
+
+            // 创建显示剩余生命数的文本
+            livesText = game.add.text(game.world.width - 5, 5, 'Lives: ' + lives, textStyle);
+            // 将文本锚点设置为右对齐
+            livesText.anchor.set(1, 0);
+
+            // 创建显示“生命丢失，点击继续”的文本
+            lifeLostText = game.add.text(game.world.width * 0.5, game.world.height * 0.5, 'Life lost, tap to continue', textStyle);
+            // 将文本锚点设置为居中对齐
+            lifeLostText.anchor.set(0.5);
+            // 初始时隐藏该文本
+            lifeLostText.visible = false;
+
+            // 创建一个开始按钮
+            startButton = game.add.button(
+                game.world.width * 0.5, // 按钮的x坐标，设置为屏幕宽度的一半
+                game.world.height * 0.5, // 按钮的y坐标，设置为屏幕高度的一半
+                "button", // 按钮的纹理图集键
+                startGame, // 按钮点击时调用的函数
+                this, // 函数的上下文
+                1, // 按钮的默认状态纹理索引
+                0, // 按钮的按下状态纹理索引
+                2, // 按钮的禁用状态纹理索引
+            );
+            // 将按钮的锚点设置为居中对齐
+            startButton.anchor.set(0.5);
+
+
+        }
+
+        function update() {
+            // 每次游戏循环时，检查ball和paddle之间的碰撞
+            game.physics.arcade.collide(ball, paddle, ballHitPaddle);
+
+            // 检查ball和砖块之间的碰撞
+            game.physics.arcade.collide(ball, bricks, ballHitBrick);
+
+            // 将paddle的位置设置为鼠标的位置
+            if (playing) {
+                paddle.x = game.input.x || game.world.width * 0.5;
+            }
+        }
+
+        // 初始化砖块信息
+        function initBricks() {
+            // 定义砖块的大小、数量、偏移量和间距
+            brickInfo = {
+                width: 50,           // 砖块的宽度为50像素
+                height: 20,          // 砖块的高度为20像素
+                count: { row: 3, col: 7 },  // 砖块的数量为3行7列
+                offset: { top: 50, left: 60 },  // 砖块的偏移量为顶部50像素，左侧60像素
+                padding: 10          // 砖块之间的间距为10像素
+            }
+
+            // 创建砖块组
+            bricks = game.add.group();
+
+            // 创建砖块
+            for (let c = 0; c < brickInfo.count.col; c++) {
+                for (let r = 0; r < brickInfo.count.row; r++) {
+                    // 计算砖块的x坐标
+                    const brickX =
+                        c * (brickInfo.width + brickInfo.padding) + brickInfo.offset.left;
+                    // 计算砖块的y坐标
+                    const brickY =
+                        r * (brickInfo.height + brickInfo.padding) + brickInfo.offset.top;
+
+                    // 在指定位置创建一个新的砖块
+                    newBrick = bricks.create(brickX, brickY, 'brick');
+
+                    // 启用物理系统对砖块的碰撞检测
+                    game.physics.enable(newBrick, Phaser.Physics.ARCADE);
+
+                    // 设置砖块为不可移动的，即它不会受到物理引擎的影响
+                    newBrick.body.immovable = true;
+
+                    // 设置砖块的锚点为(0.5, 0.5)，即砖块的水平和垂直中心点与砖块的位置坐标对齐
+                    newBrick.anchor.set(0.5);
+
+                    // 将砖块添加到砖块组中
+                    bricks.add(newBrick);
+                }
+            }
+        }
+
+
+        // 当球击中砖块时，调用此函数
+        function ballHitBrick(ball, brick) {
+            // 创建一个缩放动画，将砖块缩放为0
+            const killTween = game.add.tween(brick.scale);
+            // 设置动画的目标值为{ x: 0, y: 0 }，动画持续时间为200毫秒，使用线性插值
+            killTween.to({ x: 0, y: 0 }, 200, Phaser.Easing.Linear.None);
+            // 当动画完成时，调用brick.kill()方法，销毁砖块
+            killTween.onComplete.addOnce(() => {
+                brick.kill();
+            }, this);
+            // 启动动画
+            killTween.start();
+
+
+            // 增加分数
+            score += 10;
+
+            // 更新分数显示
+            scoreText.setText(`Points: ${score}`);
+
+            // 初始化砖块存活计数器
+            let count_alive = 0;
+
+            // 遍历所有砖块
+            for (let i = 0; i < bricks.children.length; i++) {
+                // 如果砖块存活，则计数器加一
+                if (bricks.children[i].alive) {
+                    count_alive++;
+                }
+            }
+
+            // 如果所有砖块都被击中（即没有砖块存活）
+            if (count_alive === 0) {
+                // 弹出胜利提示
+                alert("You won the game, congratulations!");
+                // 重新加载页面，开始新游戏
+                location.reload();
+            }
+        }
+
+
+        function ballLeaveScreen() {
+            // 减少剩余生命数
+            lives--;
+
+            // 如果还有剩余生命数
+            if (lives) {
+                // 更新显示剩余生命数的文本
+                livesText.setText(`Lives: ${lives}`);
+                // 显示“生命丢失，点击继续”的文本
+                lifeLostText.visible = true;
+                // 将球重置到屏幕底部中央
+                ball.reset(game.world.width * 0.5, game.world.height - 25);
+                // 将挡板重置到屏幕底部中央
+                paddle.reset(game.world.width * 0.5, game.world.height - 5);
+                // 当玩家点击屏幕时，隐藏“生命丢失，点击继续”的文本，并重新启动球的速度
+                game.input.onDown.addOnce(() => {
+                    lifeLostText.visible = false;
+                    ball.body.velocity.set(150, -150);
+                }, this);
+            } else {
+                // 如果没有剩余生命数，弹出游戏结束提示，并重新加载页面
+                alert("You lost, game over!");
+                location.reload();
+            }
+        }
+
+        function ballHitPaddle(ball, paddle) {
+            // 当球击中挡板时，播放"wobble"动画
+            ball.animations.play("wobble");
+            ball.body.velocity.x = -1 * 5 * (paddle.x - ball.x);
+        }
+
+        function startGame() {
+            // 销毁开始按钮
+            startButton.destroy();
+            // 设置球的速度，使其向左上方移动
+            ball.body.velocity.set(150, -150);
+            // 设置游戏状态为正在玩
+            playing = true;
+        }
+
+
+    </script>
+</body>
+
+</html>
